@@ -16,7 +16,6 @@ class Decoder(Model):
             layers.Dense(latent_shape//8,activation="relu"),
             layers.Dense(output_shape,activation="tanh")
         ])
-
         
     def call(self,inputs):
             x = self.decoder(inputs)

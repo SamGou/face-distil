@@ -66,7 +66,7 @@ def vae_loss(y_true, y_pred,mean,log_var):
 
 #Training
 @tf.function
-def train_step(inp,gt,enc,dec,samp):
+def train_step(inp,gt,val_inp,val_gt,enc,dec,samp):
     with tf.GradientTape() as encoder, tf.GradientTape() as decoder:
         mean,log_var = enc(inp)
         latent = samp([mean,log_var])
@@ -77,26 +77,28 @@ def train_step(inp,gt,enc,dec,samp):
         log_var = tf.cast(log_var,tf.float64)
         
         mse,kl,loss = vae_loss(gt,generated,mean,log_var)
+        val_loss = mse_loss(val_gt,val_inp)
         
     encGrad = encoder.gradient(loss,enc.trainable_variables)
     decGrad = decoder.gradient(loss,dec.trainable_variables)
     
     optimizer.apply_gradients(zip(encGrad,enc.trainable_variables))
     optimizer.apply_gradients(zip(decGrad,dec.trainable_variables))
-    return mse,kl,loss
+    return mse, kl, loss, val_loss
 
-def train(dataset,epochs):
+def train(dataset,val_dataset,epochs):
     #init
-    latent_var_shape = 197
+    latent_var_shape = 16
     encode = enc(latent_var_shape)
     decode = dec(latent_var_shape)
     sample = sampling(latent_var_shape)
     for epoch in range(epochs):
         start = time.time()
         for inp,gt in dataset:
-            mse,kl,loss = train_step(inp,gt,encode,decode,sample)
+            mse,kl,loss, val_loss = train_step(inp,gt,encode,decode,sample)
         print ('Time for epoch {} is {} sec'.format(epoch + 1, time.time()-start))
         # print(f"MSE: {mse}")
         # print(f"KLDIV: {kl}")
         print (f'TRAINING LOSS: {np.mean(loss)}')
+        print (f'VALIDATION LOSS (MSE): {val_loss}')
     return encode,decode,sample

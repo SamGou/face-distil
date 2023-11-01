@@ -1,4 +1,4 @@
-from model.vae import train
+from model.model_graph import train
 import tensorflow as tf
 from tensorflow.data import AUTOTUNE
 from model.model import Decoder
@@ -46,15 +46,13 @@ trainDS = (trainDS
            .shuffle(1024)
            .cache()
            .repeat(1)
-           .batch(1)
+           .batch(64)
            .prefetch(AUTOTUNE))
 
-encode, decode, sample = train(trainDS,1000)
+decode = train(trainDS,1000)
 
 inp,gt = list(trainDS.take(1).as_numpy_iterator())[0]
-m,v  = encode.predict(inp)
-latent = sample([m,v])
-prediction = decode.predict(latent)
+prediction  = decode.predict(inp)
 
 print(np.round(prediction,2))
 print(gt)
