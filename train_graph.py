@@ -39,6 +39,7 @@ valDS = dataset.take(int(DATA_LENGTH*0.3)) # set apart 30% for test and validati
 valDS = valDS.skip(2) # Val set
 testDS = valDS.take(2) # Test set
 trainDS = dataset.skip(int(DATA_LENGTH*0.3)) # 70 % training
+# trainDS = trainDS.take(1)
 print("\n\nTRAIN DATASET LENGTH: ",trainDS.cardinality().numpy())
 
 # Set Input pipeline
@@ -46,10 +47,10 @@ trainDS = (trainDS
            .shuffle(1024)
            .cache()
            .repeat(1)
-           .batch(64)
+           .batch(1)
            .prefetch(AUTOTUNE))
 
-decode = train(trainDS,1000)
+decode = train(trainDS,100)
 
 inp,gt = list(trainDS.take(1).as_numpy_iterator())[0]
 prediction  = decode.predict(inp)

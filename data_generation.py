@@ -373,7 +373,7 @@ class DataGen:
         # Body
         r = x[0]
         angle = np.round(math.atan2(x[2], x[1]) * (180/np.pi), 0)
-        # Correct for atan outputting negative angles
+        # Correct for atan outputting negative angles past 180
         if np.sign(angle) == -1:
             angle = 360 - abs(angle)
         gender = _genderIntToString(x[3])

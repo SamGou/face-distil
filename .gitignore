@@ -20,6 +20,9 @@ data/ingame_images/*
 data/labelling_aid/*
 !data/labelling_aid/.gitkeep
 
+*.pb
+graph_saved_model/*
+
 data/*.json
 Todo
 exp.py
