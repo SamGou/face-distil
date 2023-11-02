@@ -22,5 +22,6 @@ data/labelling_aid/*
 
 data/*.json
 Todo
+exp.py
 .vscode
 __pycache__
