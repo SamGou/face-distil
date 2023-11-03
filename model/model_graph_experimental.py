@@ -27,83 +27,80 @@ def dec():
     x = layers.Dense(2622//16,name="dense_5")(x)
     x = layers.LeakyReLU(name="lrelu_4")(x)
     
-    out = layers.Dense(197,name="out",activation="tanh")(x)
-    
     # -----------------------------EXPERIMENTAL--------------------------------------------
     # ERROR - ValueError: Dimension 2 in both shapes must be equal, but are 9 and 16. Shapes are [14,1,9] and [14,1,16].
     # From merging shape 15 with other shapes. for '{{node Cast/x}} = Pack[N=18, T=DT_FLOAT, axis=0](Decoder/sliders/Tanh, Decoder/gender/Sigmoid, Decoder/skintone/Softmax, Decoder/headshape_preset/Softmax, Decoder/headshape_refine/Softmax, Decoder/eyes_mix/Softmax, Decoder/eyecolour/Softmax, Decoder/eyebrows_preset/Softmax, Decoder/forehead_mix/Softmax, Decoder/nose_mix/Softmax, Decoder/ears_mix/Softmax, Decoder/cheeks_mix/Softmax, Decoder/mouth_mix/Softmax, Decoder/jaw_mix/Softmax, Decoder/chin_mix/Softmax, Decoder/neck_mix/Softmax, Decoder/ff1_preset/Softmax, Decoder/ff2_preset/Softmax)' with input shapes: [14,1,41], [14,1,1], [14,1,9], [14,1,9], [14,1,2], [14,1,9], [14,1,12], [14,1,10], [14,1,9], [14,1,9], [14,1,9], [14,1,9], [14,1,9], [14,1,9], [14,1,9], [14,1,9], [14,1,16], [14,1,16].
     # Return each separately as different activation functions could be utilised    
     # Body
     # The sum in `sliders` is the output lengths of the commented dense layers
-    # sliders = layers.Dense(3+4+3+2+9+3+3+4+3+3+2, name='sliders',activation="tanh")(x)
-    # gender = layers.Dense(1, name='gender',activation="sigmoid")(x)
-    # skintone = layers.Dense(9,name='skintone',activation="softmax")(x)
+    sliders = layers.Dense(3+4+3+2+9+3+3+4+3+3+2, name='sliders',activation="tanh")(x)
+    gender = layers.Dense(1, name='gender',activation="sigmoid")(x)
+    skintone = layers.Dense(9,name='skintone',activation="softmax")(x)
     
-    # # #Headshape
-    # headshape_preset = layers.Dense(9,name="headshape_preset",activation="softmax")(x)
-    # headshape_refine_dir =  layers.Dense(2,name="headshape_refine",activation="softmax")(x)
+    # #Headshape
+    headshape_preset = layers.Dense(9,name="headshape_preset",activation="softmax")(x)
+    headshape_refine_dir =  layers.Dense(2,name="headshape_refine",activation="softmax")(x)
     
-    # # Eyes
-    # #eyes_sliders = layers.Dense(4,name="eyes_sliders",activation="tanh")(x)
-    # eyes_mix = layers.Dense(9,name="eyes_mix",activation="softmax")(x)
+    # Eyes
+    #eyes_sliders = layers.Dense(4,name="eyes_sliders",activation="tanh")(x)
+    eyes_mix = layers.Dense(9,name="eyes_mix",activation="softmax")(x)
     
-    # # eyecolour
-    # eye_colour = layers.Dense(12,name="eyecolour",activation="softmax")(x)
+    # eyecolour
+    eye_colour = layers.Dense(12,name="eyecolour",activation="softmax")(x)
     
-    # #Eyebrows
-    # #eyebrows_sliders = layers.Dense(3,name="eyebrows",activation="tanh")(x)
-    # eyebrows_preset = layers.Dense(10,name="eyebrows_preset",activation="softmax")(x)
+    #Eyebrows
+    #eyebrows_sliders = layers.Dense(3,name="eyebrows",activation="tanh")(x)
+    eyebrows_preset = layers.Dense(10,name="eyebrows_preset",activation="softmax")(x)
     
-    # #Forehead
-    # #forehead_sliders = layers.Dense(2,name="forehead_sliders",activation="tanh")(x)
-    # forehead_mix = layers.Dense(9,name="forehead_mix",activation="softmax")(x)
+    #Forehead
+    #forehead_sliders = layers.Dense(2,name="forehead_sliders",activation="tanh")(x)
+    forehead_mix = layers.Dense(9,name="forehead_mix",activation="softmax")(x)
     
-    # #Nose
-    # #nose_sliders = layers.Dense(9,name="nose_sliders",activation ="tanh")(x)
-    # nose_mix = layers.Dense(9,name="nose_mix", activation="softmax")(x)
+    #Nose
+    #nose_sliders = layers.Dense(9,name="nose_sliders",activation ="tanh")(x)
+    nose_mix = layers.Dense(9,name="nose_mix", activation="softmax")(x)
     
-    # #Ears
-    # #ears_sliders = layers.Dense(3,name="ears_sliders",activation="tanh")(x)
-    # ears_mix = layers.Dense(9,name="ears_mix",activation="softmax")(x)
+    #Ears
+    #ears_sliders = layers.Dense(3,name="ears_sliders",activation="tanh")(x)
+    ears_mix = layers.Dense(9,name="ears_mix",activation="softmax")(x)
     
-    # #Cheeks 
-    # #cheeks_sliders = layers.Dense(3,name="cheeks_sliders",activation="tanh")(x)
-    # cheeks_mix = layers.Dense(9,name="cheeks_mix",activation="softmax")(x)
+    #Cheeks 
+    #cheeks_sliders = layers.Dense(3,name="cheeks_sliders",activation="tanh")(x)
+    cheeks_mix = layers.Dense(9,name="cheeks_mix",activation="softmax")(x)
     
-    # #Mouth
-    # #mouth_sliders = layers.Dense(4,name="mouth_sliders",activation="tanh")(x)
-    # mouth_mix = layers.Dense(9,name="mouth_mix",activation="softmax")(x)
+    #Mouth
+    #mouth_sliders = layers.Dense(4,name="mouth_sliders",activation="tanh")(x)
+    mouth_mix = layers.Dense(9,name="mouth_mix",activation="softmax")(x)
     
-    # #Jaw
-    # #jaw_sliders = layers.Dense(3, name="jaw_sliders",activation="tanh")(x)
-    # jaw_mix = layers.Dense(9,name = "jaw_mix",activation="softmax")(x)
+    #Jaw
+    #jaw_sliders = layers.Dense(3, name="jaw_sliders",activation="tanh")(x)
+    jaw_mix = layers.Dense(9,name = "jaw_mix",activation="softmax")(x)
     
-    # #Chin
-    # #chin_sliders = layers.Dense(3, name="chin_sliders",activation="tanh")(x)
-    # chin_mix = layers.Dense(9,name="chin_mix",activation="softmax")(x)
+    #Chin
+    #chin_sliders = layers.Dense(3, name="chin_sliders",activation="tanh")(x)
+    chin_mix = layers.Dense(9,name="chin_mix",activation="softmax")(x)
     
-    # #neck
-    # #neck_sliders = layers.Dense(2,name="neck_sliders",activation="tanh")(x)
-    # neck_mix = layers.Dense(9,name="neck_mix",activation="softmax")(x)
+    #neck
+    #neck_sliders = layers.Dense(2,name="neck_sliders",activation="tanh")(x)
+    neck_mix = layers.Dense(9,name="neck_mix",activation="softmax")(x)
     
-    # #facialforms
-    # ff1_preset = layers.Dense(16, name="ff1_preset",activation="softmax")(x)
-    # ff2_preset = layers.Dense(16, name="ff2_preset",activation="softmax")(x)
-    # ff1_intensity = layers.Dense(1,name="ff1_intensity",activation="sigmoid")(x)
-    # ff2_intensity = layers.Dense(1,name="ff2_intensity",activation="sigmoid")(x)
+    #facialforms
+    ff1_preset = layers.Dense(16, name="ff1_preset",activation="softmax")(x)
+    ff2_preset = layers.Dense(16, name="ff2_preset",activation="softmax")(x)
+    ff1_intensity = layers.Dense(1,name="ff1_intensity",activation="sigmoid")(x)
+    ff2_intensity = layers.Dense(1,name="ff2_intensity",activation="sigmoid")(x)
     
-    # continuous = tf.concat([sliders,gender,ff1_intensity,ff2_intensity],axis=2)
-    # softmax = tf.concat([gender,skintone,headshape_preset,headshape_refine_dir,
-    #                                 eyes_mix,eye_colour,eyebrows_preset,
-    #                                 forehead_mix,nose_mix,
-    #                                 ears_mix,cheeks_mix,mouth_mix,
-    #                                 jaw_mix,chin_mix,neck_mix,
-    #                                 ff1_preset,ff2_preset],axis=2)
+    continuous = tf.concat([sliders,gender,ff1_intensity,ff2_intensity],axis=2)
+    softmax = tf.concat([skintone,headshape_preset,headshape_refine_dir,
+                                    eyes_mix,eye_colour,eyebrows_preset,
+                                    forehead_mix,nose_mix,
+                                    ears_mix,cheeks_mix,mouth_mix,
+                                    jaw_mix,chin_mix,neck_mix,
+                                    ff1_preset,ff2_preset],axis=2)
     
-    # model = tf.keras.Model(inputs,(continuous,softmax),name="Decoder")
+    model = tf.keras.Model(inputs,(continuous,softmax),name="Decoder")
     
     #-----------------------------EXPERIMENTAL--------------------------------------------
-    model = tf.keras.Model(inputs, out, name="Decoder")
     return model
 
 # Optimizer
