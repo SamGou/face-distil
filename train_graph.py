@@ -47,13 +47,13 @@ trainDS = (trainDS
            .shuffle(1024)
            .cache()
            .repeat(1)
-           .batch(1)
+           .batch(64)
            .prefetch(AUTOTUNE))
 
-decode = train(trainDS,100)
+decode = train(trainDS,1000)
 
-inp,gt = list(trainDS.take(1).as_numpy_iterator())[0]
+inp,gt = list(testDS.take(1).as_numpy_iterator())[0]
 prediction  = decode.predict(inp)
 
-print(np.round(prediction,2))
-print(gt)
+tf.print(np.round(prediction,2),summarize=-1)
+tf.print(gt,summarize=-1)

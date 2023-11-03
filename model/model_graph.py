@@ -109,30 +109,52 @@ optimizer = tf.keras.optimizers.Adam(lr=5e-4)
 
 # Define Losses
 def mse_loss(y_true, y_pred):
-    # create 
-    slices = [(0,3),(24,28),(59,62),(62,64),(73,82),(91,94),(103,106),(115,119),(128,131),(140,143),(152,154),(179,180),(196,197)]
+    # Create the slices for all the slider values and add them to a new tensor
+    slices = [(0,3),(24,28),(59,62),
+              (62,64),(73,82),(91,94),
+              (103,106),(115,119),(128,131),
+              (140,143),(152,154),(179,180),(196,197)]
     YTRUE = tf.concat([y_true[...,i[0]:i[1]] for i in slices],axis=2)
     YPRED = tf.concat([y_pred[...,i[0]:i[1]] for i in slices],axis=2)
     # tf.print(Y,summarize=-1)
     r_loss = tf.math.reduce_mean(tf.square(YTRUE-YPRED),axis= [1,2])
     return 1000*r_loss
 
-# def binary_cross_entropy(y_true,y_pred):
+def binary_cross_entropy(y_true,y_pred):
     
-#     # TODO add all the bce viable vectors [0,0,0,0,1,0,0]
-#     # they need to be the same size (rectangular matricies)
-    
-#     bce = tf.keras.losses.binary_focal_crossentropy(y_true=,y_pred=,alpha=,gamma=2)
+    # TODO add all the bce viable vectors [0,0,0,0,1,0,0]
+    # they need to be the same size (rectangular matricies)
+    slices = [(4,13),(13,22),(49,59),(37,49),(163,179),(180,196)]
+    idxDiff = slices[0][1]-slices[0][0]
+    loss = []
+    sameDiffList = []
+    for idx1,idx2 in slices:
+        if idx2 - idx1 == idxDiff:
+            sameDiffList.append((idx1,idx2))
+            continue
+        elif idx2-idx1 != idxDiff:
+            YTRUE = tf.concat([y_true[...,i[0]:i[1]] for i in sameDiffList],axis=2)
+            YPRED = tf.concat([y_pred[...,i[0]:i[1]] for i in sameDiffList],axis=2)
+            loss.append(tf.reduce_sum (tf.losses.binary_focal_crossentropy(YTRUE,YPRED,alpha=0.25,gamma=2,from_logits=False)))
+            
+            sameDiffList = []
+            sameDiffList.append((idx1,idx2))
+            continue
+    return tf.reduce_mean(loss)
+
+def custom_loss(y_true,y_pred):
+    slider_loss = mse_loss(y_true,y_pred)
+    onehot_loss = binary_cross_entropy(y_true,y_pred)
+    return slider_loss + onehot_loss
     
 #Training
 @tf.function
 def train_step(inp,gt,dec):
     with tf.GradientTape() as decoder:
         generated = dec(inp)
-        tf.print(f"GENERAETED SHAPE: {tf.shape(generated)}")
         generated = tf.cast(generated,tf.float64)
-        loss = mse_loss(gt,generated)
-        
+        loss = custom_loss(gt,generated)
+
     decGrad = decoder.gradient(loss,dec.trainable_variables)
     
     optimizer.apply_gradients(zip(decGrad,dec.trainable_variables))
@@ -145,8 +167,7 @@ def train(dataset,epochs):
         start = time.time()
         for inp,gt in dataset:
             loss= train_step(inp,gt,decode)
-        print ('Time for epoch {} is {} sec'.format(epoch + 1, time.time()-start))
-        print (f'TRAINING LOSS: {np.mean(loss)}')
+        print (f'TRAINING LOSS: {np.mean(loss)} Time for epoch {epoch + 1} is {time.time()-start} sec', end='\r')
         # print (f'VALIDATION LOSS (MSE): {val_loss}')
     return decode
 
