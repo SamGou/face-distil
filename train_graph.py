@@ -46,10 +46,10 @@ trainDS = (trainDS
            .shuffle(1024)
            .cache()
            .repeat(1)
-           .batch(1)
+           .batch(64)
            .prefetch(AUTOTUNE))
 
-decode = train(trainDS, 100)
+decode = train(trainDS, 1000)
 
 
 def predict(dataset):
@@ -57,8 +57,8 @@ def predict(dataset):
         prediction = decode.predict(inp)
         prediction = np.round(prediction, 2)
         
-        # tf.print(prediction, summarize=-1)
-        # tf.print(np.round(gt, 2), summarize=-1)
+        tf.print(prediction, summarize=-1)
+        tf.print(np.round(gt, 2), summarize=-1)
 
 
-predict(trainDS.take(1))
+predict(testDS.take(1))

@@ -64,7 +64,7 @@ def cat_cross_entropy(y_true,y_pred):
 
 
 
-def mix_loss(y_true,y_pred,verb=False):
+def mix_loss(y_true,y_pred):
     
     def _my_tf_round(x, decimals = 0):
         multiplier = tf.constant(10**decimals, dtype=x.dtype)
@@ -76,9 +76,6 @@ def mix_loss(y_true,y_pred,verb=False):
     slices = [(28,37),(64,73),(82,91),(94,103),(106,115),(119,128),(131,140),(143,152),(154,163)]
     YTRUE = tf.concat([y_true[...,i[0]:i[1]] for i in slices],axis=2)
     YPRED = tf.concat([y_pred[...,i[0]:i[1]] for i in slices],axis=2)
-    if verb:
-        tf.print(_my_tf_round(YTRUE,2),summarize=-1)
-        tf.print(_my_tf_round(YPRED,2),summarize=-1)
 
     cos_sim = tf.losses.cosine_similarity(YTRUE,YPRED)
     
@@ -89,11 +86,11 @@ def mix_loss(y_true,y_pred,verb=False):
     
     return tf.reduce_mean(normalise(cos_sim))
 
-def custom_loss(y_true,y_pred,verb=False):
+def custom_loss(y_true,y_pred):
     # Add all the losses together
     sliderLoss = mse_loss(y_true,y_pred)
     onehotLoss = cat_cross_entropy(y_true,y_pred)
-    mixLoss = mix_loss(y_true,y_pred,verb)
+    mixLoss = mix_loss(y_true,y_pred)
     return sliderLoss + onehotLoss + mixLoss
     
 #Training
@@ -102,7 +99,7 @@ def train_step(inp,gt,dec,**kwargs):
     with tf.GradientTape() as decoder:
         generated= dec(inp)
         generated = tf.cast(generated,tf.float64)
-        loss = custom_loss(gt,generated,kwargs["verb"])
+        loss = custom_loss(gt,generated)
 
     decGrad = decoder.gradient(loss,dec.trainable_variables)
     
@@ -116,7 +113,7 @@ def train(dataset,epochs):
         start = time.time()
         verb = True if epoch == epochs - 1 else False
         for inp,gt in dataset:
-            loss= train_step(inp,gt,decode,verb=verb)
+            loss= train_step(inp,gt,decode)
         print (f'TRAINING LOSS: {np.mean(loss)} Time for epoch {epoch + 1} is {time.time()-start} sec', end='\r')
         # print (f'VALIDATION LOSS (MSE): {val_loss}')
     return decode
