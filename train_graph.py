@@ -60,5 +60,14 @@ def predict(dataset):
         tf.print(prediction, summarize=-1)
         tf.print(np.round(gt, 2), summarize=-1)
 
+def _percentage(x):
+        x = tf.abs(x)
+        sum_axis = tf.reshape(tf.reduce_sum(x,axis = 2),shape=(x.shape[0],x.shape[1],1))
+        return tf.divide(x,sum_axis)
+    
+prediction = predict(testDS.take(1))
 
-predict(testDS.take(1))
+slices = [(4,13),(13,22),(49,59),(37,49),(163,179),(180,196)]
+for idx1,idx2 in slices:
+    prediction[...,idx1:idx2] = _percentage(prediction[...,idx1:idx2])
+print(prediction)

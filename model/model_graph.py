@@ -33,7 +33,6 @@ def dec():
     return model
 
 # Optimizer
-optimizer = tf.keras.optimizers.Adam(learning_rate=5e-4)
 
 # Define Losses
 def mse_loss(y_true, y_pred):
@@ -119,6 +118,16 @@ def custom_loss(y_true,y_pred):
     mixLoss = mix_loss(y_true,y_pred)
     return 100*(sliderLoss + onehotLoss + mixLoss)
     
+optimizer = tf.keras.optimizers.Adam(learning_rate=5e-4)
+
+def set_learning_rate(opt,epoch,epochs):
+    if epoch > int(epochs*0.9):
+        opt.learning_rate = 5e-5
+    elif epoch > int(epochs*0.75):
+        opt.learning_rate = 1e-4
+    elif epoch > int(epochs*0.6):
+        opt.learning_rate = 5e-4
+        
 #Training
 @tf.function
 def train_step(inp,gt,dec):
@@ -134,10 +143,11 @@ def train(dataset,epochs):
     #init 
     decode = dec()
     for epoch in range(epochs):
+        set_learning_rate(optimizer,epoch,epochs)
         start = time.time()
         for inp,gt in dataset:
             loss= train_step(inp,gt,decode)
-        print (f'TRAINING LOSS: {np.mean(loss)} Time for epoch {epoch + 1} is {time.time()-start} sec', end='\r')
+        print (f'TRAINING LOSS: {np.mean(loss)} EPOCH {epoch + 1} LR {optimizer.learning_rate.numpy()} TIMESTEP {time.time()-start}', end='\r')
     return decode
 
 if __name__ == "__main__":
