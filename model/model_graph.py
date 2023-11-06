@@ -48,27 +48,28 @@ def soft_f1(y_true, y_pred):
         """
         y_true = tf.cast(y_true, tf.float32)
         y_pred = tf.cast(y_pred, tf.float32)
-        tf.print("YTRUE",y_true)
-        tf.print("YPRED",y_pred)
+
         tp = tf.reduce_sum(y_pred * y_true, axis=2)
         fp = tf.reduce_sum(y_pred * (1 - y_true), axis=2)
         fn = tf.reduce_sum((1 - y_pred) * y_true, axis=2)
-        tf.print("TP",tp)
-        tf.print("FP",fp)
-        tf.print("FN",fn)
+
         soft_f1 = 2*tp / (2*tp + fn + fp + 1e-16)
-        tf.print("SOFTF1",soft_f1)
         cost = 1 - soft_f1 # reduce 1 - soft-f1 in order to increase soft-f1
-        macro_cost = tf.reduce_mean(cost,axis=) # average on all labels
+        macro_cost = tf.reduce_mean(cost,axis=1) # average on all labels
         return macro_cost
 
 def cat_cross_entropy(y_true,y_pred):
     # Categorical CE requries the tensors to be same shape (rectangular matricies)
     # Define the start and end idxs of all onehot encodings, group by size and finally,
     # sum up and average the categorical loss
+    def _percentage(x):
+        x = tf.abs(x)
+        sum_axis = tf.reshape(tf.reduce_sum(x,axis = 2),shape=(x.shape[0],x.shape[1],1))
+        return tf.divide(x,sum_axis)
+        
     slices = [(4,13),(13,22),(49,59),(37,49),(163,179),(180,196)]
     idxDiff = slices[0][1]-slices[0][0]
-    loss = tf.convert_to_tensor(np.array([]),dtype=tf.float32)
+    loss = tf.zeros([1,1,y_true.shape[0]],dtype=tf.float32)
     sameDiffList = []
     for idx1,idx2 in slices:
         if idx2 - idx1 == idxDiff:
@@ -77,10 +78,9 @@ def cat_cross_entropy(y_true,y_pred):
         elif idx2-idx1 != idxDiff:
             YTRUE = tf.concat([y_true[...,i[0]:i[1]] for i in sameDiffList],axis=1)
             YPRED = tf.concat([y_pred[...,i[0]:i[1]] for i in sameDiffList],axis=1)
-            YPRED = tf.abs(YPRED)
-            f1loss = soft_f1(YTRUE,YTRUE+tf.constant([0.5],dtype=YTRUE.dtype))
-            tf.print("F1LOSS",f1loss)
-            # loss = tf.concat([loss,f1loss],axis=0)
+            YPRED = _percentage(YPRED)
+            f1loss = soft_f1(YTRUE,YPRED)
+            loss = tf.concat([loss,tf.reshape(f1loss,(1,1,YTRUE.shape[0]))],axis=1)
             
             sameDiffList = []
             sameDiffList.append((idx1,idx2))
@@ -88,18 +88,12 @@ def cat_cross_entropy(y_true,y_pred):
 
     YTRUE = tf.concat([y_true[...,i[0]:i[1]] for i in sameDiffList],axis=1)
     YPRED = tf.concat([y_pred[...,i[0]:i[1]] for i in sameDiffList],axis=1)
-    YPRED = tf.abs(YPRED)
-    f1loss = soft_f1(YTRUE,YTRUE+tf.constant([0.5],dtype=YTRUE.dtype))
-    tf.print("F1LOSS",f1loss)
-    # loss = tf.concat([loss,f1loss],axis=0)
-    
-    return loss
+    YPRED = _percentage(YPRED)
+    f1loss = soft_f1(YTRUE,YPRED)
+    loss = tf.concat([loss,tf.reshape(f1loss,(1,1,YTRUE.shape[0]))],axis=1)[:,1:,:]
+    return tf.reduce_sum(loss,axis=1)[0]
 
 def mix_loss(y_true,y_pred):
-    
-    def _my_tf_round(x, decimals = 0):
-        multiplier = tf.constant(10**decimals, dtype=x.dtype)
-        return tf.round(x * multiplier) / multiplier
     
     y_true = tf.cast(y_true,tf.float32)
     y_pred = tf.cast(y_pred,tf.float32)
@@ -109,35 +103,28 @@ def mix_loss(y_true,y_pred):
     slices = [(28,37),(64,73),(82,91),(94,103),(106,115),(119,128),(131,140),(143,152),(154,163)]
     YTRUE = tf.concat([y_true[...,i[0]:i[1]] for i in slices],axis=2)
     YPRED = tf.concat([y_pred[...,i[0]:i[1]] for i in slices],axis=2)
-
-    cos_sim = tf.losses.cosine_similarity(YTRUE,YPRED)
+    cos_sim = tf.losses.cosine_similarity(YTRUE,YPRED,axis=[1,2])
     
     def normalise(x):
         norm = tf.divide(tf.add(x,1), 2)
         corrected_norm = tf.where(norm < 1e-10, tf.constant(0.0, dtype=x.dtype), norm)
         return corrected_norm
     
-    tf.print("COS_SIM",normalise(cos_sim))
     return normalise(cos_sim)
 
 def custom_loss(y_true,y_pred):
     # Add all the losses together
     sliderLoss = mse_loss(y_true,y_pred)
-    tf.print("SLIDER",sliderLoss,sliderLoss.shape)
     onehotLoss = cat_cross_entropy(y_true,y_pred)
-    tf.print("CATEGORICAL",onehotLoss,onehotLoss.shape)
-    mixLoss = mix_loss(y_true,y_pred)#
-    tf.print("MIX",mixLoss,mixLoss.shape)
-    return sliderLoss #1000*(sliderLoss + onehotLoss + mixLoss)
+    mixLoss = mix_loss(y_true,y_pred)
+    return 100*(sliderLoss + onehotLoss + mixLoss)
     
 #Training
 @tf.function
-def train_step(inp,gt,dec,**kwargs):
+def train_step(inp,gt,dec):
     with tf.GradientTape() as decoder:
         generated= dec(inp)
         loss = custom_loss(gt,generated)
-        tf.print("TOTAL LOSS",loss)
-
     decGrad = decoder.gradient(loss,dec.trainable_variables)
     
     optimizer.apply_gradients(zip(decGrad,dec.trainable_variables))
@@ -151,7 +138,6 @@ def train(dataset,epochs):
         for inp,gt in dataset:
             loss= train_step(inp,gt,decode)
         print (f'TRAINING LOSS: {np.mean(loss)} Time for epoch {epoch + 1} is {time.time()-start} sec', end='\r')
-        # print (f'VALIDATION LOSS (MSE): {val_loss}')
     return decode
 
 if __name__ == "__main__":

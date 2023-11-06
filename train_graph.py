@@ -38,7 +38,7 @@ testDS = dataset.take(int(DATA_LENGTH*0.3))
 # valDS = valDS.skip(2) # Val set
 # testDS = valDS.take(2) # Test set
 trainDS = dataset.skip(int(DATA_LENGTH*0.3))  # 70 % training
-trainDS = trainDS.take(2)
+# trainDS = trainDS.take(2)
 print("\n\nTRAIN DATASET LENGTH: ", trainDS.cardinality().numpy())
 
 # Set Input pipeline
@@ -46,19 +46,19 @@ trainDS = (trainDS
            .shuffle(1024)
            .cache()
            .repeat(1)
-           .batch(2)
+           .batch(64)
            .prefetch(AUTOTUNE))
 
-decode = train(trainDS, 1)
+decode = train(trainDS, 10000)
 
 
-# def predict(dataset):
-#     for inp, gt in dataset:
-#         prediction = decode.predict(inp)
-#         prediction = np.round(prediction, 2)
+def predict(dataset):
+    for inp, gt in dataset:
+        prediction = decode.predict(inp)
+        prediction = np.round(prediction, 2)
         
-#         tf.print(prediction, summarize=-1)
-#         tf.print(np.round(gt, 2), summarize=-1)
+        tf.print(prediction, summarize=-1)
+        tf.print(np.round(gt, 2), summarize=-1)
 
 
-# predict(testDS.take(1))
+predict(testDS.take(1))
