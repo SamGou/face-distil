@@ -121,8 +121,9 @@ def custom_loss(y_true,y_pred):
 optimizer = tf.keras.optimizers.Adam(learning_rate=5e-4)
 
 def set_learning_rate(opt,epoch,epochs):
+    # TODO Add a learning scheduler + warmup
     if epoch > int(epochs*0.9):
-        opt.learning_rate = 5e-5
+        opt.learning_rate = 1e-5
     elif epoch > int(epochs*0.75):
         opt.learning_rate = 1e-4
     elif epoch > int(epochs*0.6):

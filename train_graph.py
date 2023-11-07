@@ -42,32 +42,38 @@ trainDS = dataset.skip(int(DATA_LENGTH*0.3))  # 70 % training
 print("\n\nTRAIN DATASET LENGTH: ", trainDS.cardinality().numpy())
 
 # Set Input pipeline
-trainDS = (trainDS
+trainDS_batched = (trainDS
            .shuffle(1024)
            .cache()
            .repeat(1)
            .batch(64)
            .prefetch(AUTOTUNE))
 
-decode = train(trainDS, 10000)
+decode = train(trainDS_batched, 10000)
 
 
 def predict(dataset):
+    diff_mu = []
+    diff_sig = []
+    def _percentage_predict(x):
+        x = tf.abs(x)
+        sum_axis = tf.reshape(tf.reduce_sum(x,axis = 1),shape=(x.shape[0],1))
+        return tf.divide(x,sum_axis)
+
     for inp, gt in dataset:
         prediction = decode.predict(inp)
         prediction = np.round(prediction, 2)
-        
-        tf.print(prediction, summarize=-1)
-        tf.print(np.round(gt, 2), summarize=-1)
+        slices = [(4,13),(13,22),(49,59),(37,49),(163,179),(180,196)]
+        for idx1,idx2 in slices:
+            prediction[...,idx1:idx2] = _percentage_predict(prediction[...,idx1:idx2])
 
-def _percentage(x):
-        x = tf.abs(x)
-        sum_axis = tf.reshape(tf.reduce_sum(x,axis = 2),shape=(x.shape[0],x.shape[1],1))
-        return tf.divide(x,sum_axis)
+        tf.print("PRED",prediction, summarize=-1)
+        tf.print("GT",np.round(gt, 2), summarize=-1) 
+        diff = prediction-gt
+        diff_mu.append(np.mean(diff))
+        diff_sig.append(np.std(diff))
     
-prediction = predict(testDS.take(1))
-
-slices = [(4,13),(13,22),(49,59),(37,49),(163,179),(180,196)]
-for idx1,idx2 in slices:
-    prediction[...,idx1:idx2] = _percentage(prediction[...,idx1:idx2])
-print(prediction)
+    print("PREDICTIONS MEAN ERROR %2f +/- %2f" % (np.mean(diff_mu), np.mean(diff_sig)))
+    
+print("\n\nTEST DATASET LENGTH: ", testDS.cardinality().numpy())
+prediction = predict(trainDS)
