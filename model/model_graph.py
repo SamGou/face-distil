@@ -135,17 +135,17 @@ class LRSched:
         if epoch >= int(epochs*0.6):
             if epoch == int(epochs*0.6):
                 self.last_change_epoch = int(epochs*0.6)
-            opt.learning_rate = 5e-5*np.exp(epoch*self.K(5e-5,1e-6,3000))
+            opt.learning_rate = 5e-5*np.exp(epoch*self.K(5e-5,1e-6,2000))
             
         elif epoch >= int(epochs*0.3):
             if epoch == int(epochs*0.3):
                 self.last_change_epoch = int(epochs*0.3)
-            opt.learning_rate = 1e-4*np.exp(epoch*self.K(1e-4,5e-5,2200))
+            opt.learning_rate = 1e-4*np.exp(epoch*self.K(1e-4,5e-5,1500))
             
         elif epoch >= self.warmup_threshold:
             if epoch == self.warmup_threshold:
                 self.last_change_epoch = self.warmup_threshold
-            opt.learning_rate = self.warmup_target*np.exp(epoch*self.K(self.warmup_target,1e-4,2200))
+            opt.learning_rate = self.warmup_target*np.exp(epoch*self.K(self.warmup_target,1e-4,1500))
             
         elif epoch <= self.warmup_steps:
             opt.learning_rate = self.init_lr*np.exp(epoch*self.K(self.init_lr,self.warmup_target,self.warmup_steps))    
