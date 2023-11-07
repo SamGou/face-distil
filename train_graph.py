@@ -76,4 +76,4 @@ def predict(dataset):
     print("PREDICTIONS MEAN ERROR %2f +/- %2f" % (np.mean(diff_mu), np.mean(diff_sig)))
     
 print("\n\nTEST DATASET LENGTH: ", testDS.cardinality().numpy())
-prediction = predict(trainDS)
+prediction = predict(testDS)

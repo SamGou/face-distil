@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tensorflow import keras
 
+INIT_LR = 5e-4
 # Define encoder - we only need to create latent variables to pass to the sampling network
 # This is due to the assumption that the DeepFace representation of a face is already a latent vector
 def dec():
@@ -118,16 +119,36 @@ def custom_loss(y_true,y_pred):
     mixLoss = mix_loss(y_true,y_pred)
     return 100*(sliderLoss + onehotLoss + mixLoss)
     
-optimizer = tf.keras.optimizers.Adam(learning_rate=5e-4)
-
-def set_learning_rate(opt,epoch,epochs):
-    # TODO Add a learning scheduler + warmup
-    if epoch > int(epochs*0.9):
-        opt.learning_rate = 1e-5
-    elif epoch > int(epochs*0.75):
-        opt.learning_rate = 1e-4
-    elif epoch > int(epochs*0.6):
-        opt.learning_rate = 5e-4
+optimizer = tf.keras.optimizers.Adam(learning_rate=INIT_LR)
+class LRSched:
+    def __init__(self,initial_learningrate):
+        self.last_change_epoch = 0
+        self.init_lr = initial_learningrate
+        self.warmup_steps = 666
+        self.warmup_target = 5e-3
+        self.warmup_threshold = 1000
+        
+    def K(self,init,target,steps):
+        return np.log(target/init)/(self.last_change_epoch+steps)
+    
+    def set_learning_rate(self,opt,epoch,epochs):
+        if epoch >= int(epochs*0.6):
+            if epoch == int(epochs*0.6):
+                self.last_change_epoch = int(epochs*0.6)
+            opt.learning_rate = 5e-5*np.exp(epoch*self.K(5e-5,1e-6,3000))
+            
+        elif epoch >= int(epochs*0.3):
+            if epoch == int(epochs*0.3):
+                self.last_change_epoch = int(epochs*0.3)
+            opt.learning_rate = 1e-4*np.exp(epoch*self.K(1e-4,5e-5,2200))
+            
+        elif epoch >= self.warmup_threshold:
+            if epoch == self.warmup_threshold:
+                self.last_change_epoch = self.warmup_threshold
+            opt.learning_rate = self.warmup_target*np.exp(epoch*self.K(self.warmup_target,1e-4,2200))
+            
+        elif epoch <= self.warmup_steps:
+            opt.learning_rate = self.init_lr*np.exp(epoch*self.K(self.init_lr,self.warmup_target,self.warmup_steps))    
         
 #Training
 @tf.function
@@ -143,8 +164,9 @@ def train_step(inp,gt,dec):
 def train(dataset,epochs):
     #init 
     decode = dec()
+    LR = LRSched(INIT_LR)
     for epoch in range(epochs):
-        set_learning_rate(optimizer,epoch,epochs)
+        LR.set_learning_rate(optimizer,epoch,epochs)
         start = time.time()
         for inp,gt in dataset:
             loss= train_step(inp,gt,decode)
