@@ -20,6 +20,8 @@ data/ingame_images/*
 data/labelling_aid/*
 !data/labelling_aid/.gitkeep
 
+data/test/*
+
 *.pb
 graph_saved_model/*
 
