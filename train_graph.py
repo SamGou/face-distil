@@ -34,10 +34,10 @@ inputDataset = tf.data.Dataset.from_tensor_slices(input)
 dataset = tf.data.Dataset.from_tensor_slices((input, ground_truth))
 dataset = dataset.shuffle(1024)
 # set apart 30% for test and validation
-testDS = dataset.take(int(DATA_LENGTH*0.3))
+testDS = dataset.take(int(DATA_LENGTH*0.2))
 # valDS = valDS.skip(2) # Val set
 # testDS = valDS.take(2) # Test set
-trainDS = dataset.skip(int(DATA_LENGTH*0.3))  # 70 % training
+trainDS = dataset.skip(int(DATA_LENGTH*0.2))  # 70 % training
 # trainDS = trainDS.take(2)
 print("\n\nTRAIN DATASET LENGTH: ", trainDS.cardinality().numpy())
 
@@ -62,18 +62,19 @@ def predict(dataset):
 
     for inp, gt in dataset:
         prediction = decode.predict(inp)
-        prediction = np.round(prediction, 2)
         slices = [(4,13),(13,22),(49,59),(37,49),(163,179),(180,196)]
         for idx1,idx2 in slices:
             prediction[...,idx1:idx2] = _percentage_predict(prediction[...,idx1:idx2])
 
+        diff = prediction-gt
+        prediction = np.round(prediction, 2)
         tf.print("PRED",prediction, summarize=-1)
         tf.print("GT",np.round(gt, 2), summarize=-1) 
-        diff = prediction-gt
         diff_mu.append(np.mean(diff))
         diff_sig.append(np.std(diff))
     
     print("PREDICTIONS MEAN ERROR %2f +/- %2f" % (np.mean(diff_mu), np.mean(diff_sig)))
     
 print("\n\nTEST DATASET LENGTH: ", testDS.cardinality().numpy())
-prediction = predict(testDS)
+prediction = predict(testDS.take(3))
+tf.saved_model.save(decode, "./trained-model")

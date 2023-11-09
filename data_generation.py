@@ -580,6 +580,6 @@ if __name__ == "__main__":
         headshapeToImg(direction=decodedOutput["headshape"][1],intensity=decodedOutput["headshape"][2])
     else:
         print(a.arrayShapes())
-        a.generateGTDataset(10)
-        # a.generateDeepFaceData()
+        # a.generateGTDataset(10)
+        a.generateDeepFaceData()
         print(a.arrayShapes())

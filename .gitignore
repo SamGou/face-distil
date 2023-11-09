@@ -24,6 +24,7 @@ data/test/*
 
 *.pb
 graph_saved_model/*
+trained-model/*
 
 data/*.json
 Todo

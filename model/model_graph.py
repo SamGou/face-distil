@@ -120,6 +120,7 @@ def custom_loss(y_true,y_pred):
     return 100*(sliderLoss + onehotLoss + mixLoss)
     
 optimizer = tf.keras.optimizers.Adam(learning_rate=INIT_LR)
+
 class LRSched:
     def __init__(self,initial_learningrate):
         self.last_change_epoch = 0
