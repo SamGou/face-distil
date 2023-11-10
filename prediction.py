@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 from deepface import DeepFace
+from model.model_graph import normalise
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 
 # set seed
@@ -28,7 +29,9 @@ def predict_image(model,image_emb):
     slices = [(4,13),(13,22),(49,59),(37,49),(163,179),(180,196)]
     for idx1,idx2 in slices:
         prediction[...,idx1:idx2] = _percentage_predict(prediction[...,idx1:idx2])
-
+    # gender post-process
+    prediction[...,3:4] = normalise(prediction[...,3:4])
+    
     prediction = np.round(prediction, 2)
     print("PRED",prediction,prediction.shape)
     
