@@ -28,12 +28,17 @@ def dec():
     x = layers.Dense(2622//16,name="dense_5")(x)
     x = layers.LeakyReLU(name="lrelu_4")(x)
     
-    out = layers.Dense(197,name="out",activation="linear")(x)
+    out = layers.Dense(197,name="out",activation="tanh")(x)
     
     model = tf.keras.Model(inputs, out, name="Decoder")
     return model
 
-# Optimizer
+# Define Utils
+def normalise(x):
+    # normalise from (-1,1) to (0,1)
+    norm = tf.divide(tf.add(x,1), 2)
+    corrected_norm = tf.where(norm < 1e-10, tf.constant(0.0, dtype=x.dtype), norm)
+    return corrected_norm
 
 # Define Losses
 def mse_loss(y_true, y_pred):
@@ -52,12 +57,20 @@ def soft_f1(y_true, y_pred):
         tp = tf.reduce_sum(y_pred * y_true, axis=2)
         fp = tf.reduce_sum(y_pred * (1 - y_true), axis=2)
         fn = tf.reduce_sum((1 - y_pred) * y_true, axis=2)
-
         soft_f1 = 2*tp / (2*tp + fn + fp + 1e-16)
         cost = 1 - soft_f1 # reduce 1 - soft-f1 in order to increase soft-f1
         macro_cost = tf.reduce_mean(cost,axis=1) # average on all labels
         return macro_cost
 
+def gender_loss(y_true,y_pred):
+    y_true = tf.cast(y_true, tf.float32)
+    y_pred = tf.cast(y_pred, tf.float32)
+    YTRUE = y_true[...,3:4]
+    YPRED = y_pred[...,3:4]
+    YPRED = normalise(YPRED)
+    f1loss = soft_f1(YTRUE,YPRED)
+    return f1loss
+      
 def cat_cross_entropy(y_true,y_pred):
     # Categorical CE requries the tensors to be same shape (rectangular matricies)
     # Define the start and end idxs of all onehot encodings, group by size and finally,
@@ -104,12 +117,6 @@ def mix_loss(y_true,y_pred):
     YTRUE = tf.concat([y_true[...,i[0]:i[1]] for i in slices],axis=2)
     YPRED = tf.concat([y_pred[...,i[0]:i[1]] for i in slices],axis=2)
     cos_sim = tf.losses.cosine_similarity(YTRUE,YPRED,axis=[1,2])
-    
-    def normalise(x):
-        norm = tf.divide(tf.add(x,1), 2)
-        corrected_norm = tf.where(norm < 1e-10, tf.constant(0.0, dtype=x.dtype), norm)
-        return corrected_norm
-    
     return normalise(cos_sim)
 
 def custom_loss(y_true,y_pred):
@@ -117,7 +124,8 @@ def custom_loss(y_true,y_pred):
     sliderLoss = mse_loss(y_true,y_pred)
     onehotLoss = cat_cross_entropy(y_true,y_pred)
     mixLoss = mix_loss(y_true,y_pred)
-    return 100*(sliderLoss + onehotLoss + mixLoss)
+    gl = gender_loss(y_true,y_pred)
+    return 100*(sliderLoss + onehotLoss + mixLoss + gl)
     
 optimizer = tf.keras.optimizers.Adam(learning_rate=INIT_LR)
 
@@ -134,19 +142,34 @@ class LRSched:
     
     def set_learning_rate(self,opt,epoch,epochs):
         if epoch >= int(epochs*0.6):
-            if epoch == int(epochs*0.6):
+            steps_to_target = 2000
+            if epoch > int(epochs*0.6)+ steps_to_target:
+                opt.learning_rate = 1e-6
+            elif epoch == int(epochs*0.6):
                 self.last_change_epoch = int(epochs*0.6)
-            opt.learning_rate = 5e-5*np.exp(epoch*self.K(5e-5,1e-6,2000))
+                opt.learning_rate = 5e-5*np.exp(epoch*self.K(5e-5,1e-6,steps_to_target))
+            else:
+                opt.learning_rate = 5e-5*np.exp(epoch*self.K(5e-5,1e-6,steps_to_target))
             
         elif epoch >= int(epochs*0.3):
-            if epoch == int(epochs*0.3):
+            steps_to_target = 1500
+            if epoch > int(epochs*0.3) + steps_to_target:
+                opt.learning_rate = 1e-6
+            elif epoch == int(epochs*0.3):
                 self.last_change_epoch = int(epochs*0.3)
-            opt.learning_rate = 1e-4*np.exp(epoch*self.K(1e-4,5e-5,1500))
+                opt.learning_rate = 1e-4*np.exp(epoch*self.K(1e-4,5e-5,steps_to_target))
+            else:
+                opt.learning_rate = 1e-4*np.exp(epoch*self.K(1e-4,5e-5,steps_to_target))
             
         elif epoch >= self.warmup_threshold:
-            if epoch == self.warmup_threshold:
+            steps_to_target = 1500
+            if epoch > self.warmup_threshold:
+                opt.learning_rate = 1e-4
+            elif epoch == self.warmup_threshold:
                 self.last_change_epoch = self.warmup_threshold
-            opt.learning_rate = self.warmup_target*np.exp(epoch*self.K(self.warmup_target,1e-4,1500))
+                opt.learning_rate = self.warmup_target*np.exp(epoch*self.K(self.warmup_target,1e-4,steps_to_target))
+            else:
+                opt.learning_rate = self.warmup_target*np.exp(epoch*self.K(self.warmup_target,1e-4,steps_to_target))
             
         elif epoch <= self.warmup_steps:
             opt.learning_rate = self.init_lr*np.exp(epoch*self.K(self.init_lr,self.warmup_target,self.warmup_steps))    

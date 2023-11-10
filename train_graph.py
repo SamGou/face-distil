@@ -1,4 +1,4 @@
-from model.model_graph import train
+from model.model_graph import train, normalise
 import tensorflow as tf
 from tensorflow.data import AUTOTUNE
 from tensorflow.keras import losses
@@ -51,7 +51,6 @@ trainDS_batched = (trainDS
 
 decode = train(trainDS_batched, 10000)
 
-
 def predict(dataset):
     diff_mu = []
     diff_sig = []
@@ -63,9 +62,13 @@ def predict(dataset):
     for inp, gt in dataset:
         prediction = decode.predict(inp)
         slices = [(4,13),(13,22),(49,59),(37,49),(163,179),(180,196)]
+        
+        # One hot post-process
         for idx1,idx2 in slices:
             prediction[...,idx1:idx2] = _percentage_predict(prediction[...,idx1:idx2])
-
+        # gender post-process
+        prediction[...,3:4] = normalise(prediction[...,3:4])
+        
         diff = prediction-gt
         prediction = np.round(prediction, 2)
         tf.print("PRED",prediction, summarize=-1)
@@ -76,5 +79,5 @@ def predict(dataset):
     print("PREDICTIONS MEAN ERROR %2f +/- %2f" % (np.mean(diff_mu), np.mean(diff_sig)))
     
 print("\n\nTEST DATASET LENGTH: ", testDS.cardinality().numpy())
-prediction = predict(testDS.take(3))
+prediction = predict(testDS.take(2))
 tf.saved_model.save(decode, "./trained-model")
