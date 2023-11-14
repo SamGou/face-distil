@@ -10,7 +10,7 @@ import os
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 
 # set seed
-tf.random.set_seed(2041999)
+tf.random.set_seed(204199)
 
 # set constants
 GROUND_TRUTH_PATH = "data/ground_truth/"
@@ -49,7 +49,7 @@ trainDS_batched = (trainDS
            .batch(64)
            .prefetch(AUTOTUNE))
 
-decode = train(trainDS_batched, 10000)
+decode = train(trainDS_batched, 50000)
 
 def predict(dataset):
     diff_mu = []

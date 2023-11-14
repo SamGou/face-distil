@@ -44,28 +44,23 @@ def normalise(x):
 def slider_loss(y_true, y_pred):
     y_true = tf.cast(y_true,tf.float32)
     y_pred = tf.cast(y_pred,tf.float32)
-    slices = [(0,4),(22,24),(24,28),(59,62),(62,64),
-              (73,82),(91,94),(103,106),(115,119),(128,131),
-              (140,143),(152,154),(179,180),(196,197)]
-    YTRUE = tf.concat([y_true[...,i[0]:i[1]] for i in slices],axis=2)
-    YPRED = tf.concat([y_pred[...,i[0]:i[1]] for i in slices],axis=2)
-    r_loss = tf.math.reduce_mean(tf.square(YTRUE-YPRED),axis= [1,2])
+    r_loss = tf.math.reduce_mean(tf.square(y_true-y_pred),axis= [1,2])
     return r_loss
 
 def soft_f1(y_true, y_pred):
-        """Compute the macro soft F1-score as a cost (average 1 - soft-F1 across all labels).
-        Use probability values instead of binary predictions.
-        """
-        y_true = tf.cast(y_true, tf.float32)
-        y_pred = tf.cast(y_pred, tf.float32)
+    """Compute the macro soft F1-score as a cost (average 1 - soft-F1 across all labels).
+    Use probability values instead of binary predictions.
+    """
+    y_true = tf.cast(y_true, tf.float32)
+    y_pred = tf.cast(y_pred, tf.float32)
 
-        tp = tf.reduce_sum(y_pred * y_true, axis=2)
-        fp = tf.reduce_sum(y_pred * (1 - y_true), axis=2)
-        fn = tf.reduce_sum((1 - y_pred) * y_true, axis=2)
-        soft_f1 = 2*tp / (2*tp + fn + fp + 1e-16)
-        cost = 1 - soft_f1 # reduce 1 - soft-f1 in order to increase soft-f1
-        macro_cost = tf.reduce_mean(cost,axis=1) # average on all labels
-        return macro_cost
+    tp = tf.reduce_sum(y_pred * y_true, axis=2)
+    fp = tf.reduce_sum(y_pred * (1 - y_true), axis=2)
+    fn = tf.reduce_sum((1 - y_pred) * y_true, axis=2)
+    soft_f1 = 2*tp / (2*tp + fn + fp + 1e-16)
+    cost = 1 - soft_f1 # reduce 1 - soft-f1 in order to increase soft-f1
+    macro_cost = tf.reduce_mean(cost,axis=1) # average on all labels
+    return macro_cost
 
 def gender_loss(y_true,y_pred):
     y_true = tf.cast(y_true, tf.float32)
