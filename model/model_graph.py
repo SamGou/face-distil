@@ -41,10 +41,15 @@ def normalise(x):
     return corrected_norm
 
 # Define Losses
-def mse_loss(y_true, y_pred):
+def slider_loss(y_true, y_pred):
     y_true = tf.cast(y_true,tf.float32)
     y_pred = tf.cast(y_pred,tf.float32)
-    r_loss = tf.math.reduce_mean(tf.square(y_true-y_pred),axis= [1,2])
+    slices = [(0,4),(22,24),(24,28),(59,62),(62,64),
+              (73,82),(91,94),(103,106),(115,119),(128,131),
+              (140,143),(152,154),(179,180),(196,197)]
+    YTRUE = tf.concat([y_true[...,i[0]:i[1]] for i in slices],axis=2)
+    YPRED = tf.concat([y_pred[...,i[0]:i[1]] for i in slices],axis=2)
+    r_loss = tf.math.reduce_mean(tf.square(YTRUE-YPRED),axis= [1,2])
     return r_loss
 
 def soft_f1(y_true, y_pred):
@@ -108,20 +113,34 @@ def cat_cross_entropy(y_true,y_pred):
 
 def mix_loss(y_true,y_pred):
     
+    def _mix_post_process(x,threshold= 0.04):
+        ex = tf.where(x>=0.,x,0.0)
+        sums = tf.reshape(tf.reduce_sum(ex,axis=2),(ex.shape[0],ex.shape[1],1))
+        sums = tf.where(sums>1., sums, 1.)
+        ex  = tf.divide(ex, sums)
+        ex = tf.where(ex>=threshold,ex,0.0)
+        return ex
+    
+    def _get_index_loss(y_true,y_pred):
+        idx_ytrue = tf.where(y_true>0., 1.,0.)
+        idx_ypred = tf.where(y_pred>0.,1.,0.)
+        return soft_f1(idx_ytrue,idx_ypred)
+        
     y_true = tf.cast(y_true,tf.float32)
     y_pred = tf.cast(y_pred,tf.float32)
-    # For the mix sliders use cosine_similarity as they are 1 dimensional vectors of values < 1
-    # This is in addition to the value improving forces of the MSE
-    #Take slices of mix sliders
+
     slices = [(28,37),(64,73),(82,91),(94,103),(106,115),(119,128),(131,140),(143,152),(154,163)]
-    YTRUE = tf.concat([y_true[...,i[0]:i[1]] for i in slices],axis=2)
-    YPRED = tf.concat([y_pred[...,i[0]:i[1]] for i in slices],axis=2)
-    cos_sim = tf.losses.cosine_similarity(YTRUE,YPRED,axis=[1,2])
-    return normalise(cos_sim)
+    YTRUE = tf.concat([y_true[...,i[0]:i[1]] for i in slices],axis=1)
+    YPRED = tf.concat([y_pred[...,i[0]:i[1]] for i in slices],axis=1)
+    YPRED = _mix_post_process(YPRED)
+    idx_loss = _get_index_loss(YTRUE,YPRED)
+    mse = tf.math.reduce_mean(tf.square(YTRUE-YPRED),axis= [1,2])
+    
+    return mse+idx_loss 
 
 def custom_loss(y_true,y_pred):
     # Add all the losses together
-    sliderLoss = mse_loss(y_true,y_pred)
+    sliderLoss = slider_loss(y_true,y_pred)
     onehotLoss = cat_cross_entropy(y_true,y_pred)
     mixLoss = mix_loss(y_true,y_pred)
     gl = gender_loss(y_true,y_pred)
