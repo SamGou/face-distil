@@ -21,6 +21,9 @@ dg = DataGen()
 #Load model
 model = tf.saved_model.load("./trained-model")
 def predict_image(model,image_emb):
+    def _round(x,base=0.1):
+        return base * tf.round(x/base)
+    
     def _percentage_predict(x):
         x = tf.abs(x)
         sum_axis = tf.reshape(tf.reduce_sum(x,axis = 1),shape=(x.shape[0],1))
@@ -32,11 +35,9 @@ def predict_image(model,image_emb):
         sums = tf.where(sums>1., sums, 1.)
         ex  = tf.divide(ex, sums)
         ex = tf.where(ex>=threshold,ex,0.0)
-        ex = base * tf.round(ex/base)
+        ex = _round(ex,base=base)
         return ex
     
-    def _round(x,base=0.1):
-        return base * tf.round(x/base)
     
     def _slider_post_process(x):
         slices_round10 = [(22,24),(24,28),(59,62),(62,64),
@@ -65,6 +66,7 @@ def predict_image(model,image_emb):
     return prediction
 
     
-prediction = predict_image(model,embedding)
+prediction = predict_image(model,embedding)[0]
 print("PRED",prediction)
+print(prediction[22:24])
 print("DECODED",dg.decodeOutput(prediction))

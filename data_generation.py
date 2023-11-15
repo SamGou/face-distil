@@ -347,10 +347,12 @@ class DataGen:
             # The norm in this encoding is equal to the intensity
             # and using it to calculate the unit vector will give the direction
             norm = np.linalg.norm(vector)
+            print("norm", norm)
             if norm == 0:
                 return "None", None
             else:
                 unitVector = vector / norm
+                print("UNIT", unitVector)
                 if AEQ(unitVector, np.array([-1, 0])):
                     return directions[0], norm
 
@@ -581,5 +583,5 @@ if __name__ == "__main__":
     else:
         print(a.arrayShapes())
         # a.generateGTDataset(10)
-        a.generateDeepFaceData()
+        # a.generateDeepFaceData()
         print(a.arrayShapes())

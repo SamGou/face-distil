@@ -108,6 +108,6 @@ def predict(dataset):
     
     print("PREDICTIONS MEAN SQ ERROR %2f +/- %2f" % (np.mean(np.square(diff_mu)), np.mean(diff_sig)))
     
-print("\n\nTEST DATASET LENGTH: ", testDS.cardinality().numpy())
-prediction = predict(testDS.take(2))
-# tf.saved_model.save(decode, "./trained-model")
+# print("\n\nTEST DATASET LENGTH: ", testDS.cardinality().numpy())
+# prediction = predict(testDS.take(2))
+tf.saved_model.save(decode, "./trained-model")
